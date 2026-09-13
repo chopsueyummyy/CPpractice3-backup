@@ -180,10 +180,16 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
       final String adminId = _session.counselorId?.toString() ?? '0';
       final String roleId = _session.roleId?.toString() ?? '2';
       
+      final visibleIds = _records
+          .map((r) => r['assessmentId']?.toString())
+          .where((id) => id != null && id!.isNotEmpty)
+          .join(',');
+
       final String queryParams = [
         'exportCsv=1',
         'adminId=$adminId',
         'roleId=$roleId',
+        if (visibleIds.isNotEmpty) 'ids=$visibleIds',
         'status=${Uri.encodeComponent(_status)}',
         'strand=${Uri.encodeComponent(_strand)}',
         'gradeLevel=${Uri.encodeComponent(_gradeLevel)}',

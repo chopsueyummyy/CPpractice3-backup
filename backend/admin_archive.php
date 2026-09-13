@@ -31,6 +31,7 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
     ];
 
     // Filter Parameters
+    $idsFilter          = $_GET['ids'] ?? '';
     $statusFilter       = $_GET['status'] ?? 'all';
     $strandFilter       = $_GET['strand'] ?? 'all';
     $gradeLevelFilter   = $_GET['gradeLevel'] ?? 'all';
@@ -44,6 +45,14 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
     $whereClauses = ["a.Status != 'in_progress'"];
     $params = [];
     $types = "";
+
+    if (!empty($idsFilter)) {
+        $rawIds = explode(',', $idsFilter);
+        $cleanIds = array_map('intval', array_filter($rawIds, 'is_numeric'));
+        if (!empty($cleanIds)) {
+            $whereClauses[] = "a.AssessmentID IN (" . implode(',', $cleanIds) . ")";
+        }
+    }
 
     if (!empty($statusFilter) && $statusFilter !== 'all') {
         if ($statusFilter === 'declined' || $statusFilter === 'rejected') {
