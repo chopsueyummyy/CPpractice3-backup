@@ -46,20 +46,24 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
     $types = "";
 
     if (!empty($statusFilter) && $statusFilter !== 'all') {
-        $whereClauses[] = "a.Status = ?";
-        $params[] = $statusFilter;
-        $types .= "s";
+        if ($statusFilter === 'declined' || $statusFilter === 'rejected') {
+            $whereClauses[] = "(a.Status = 'declined' OR a.Status = 'rejected')";
+        } else {
+            $whereClauses[] = "a.Status = ?";
+            $params[] = $statusFilter;
+            $types .= "s";
+        }
     }
 
     if (!empty($strandFilter) && $strandFilter !== 'all') {
-        $whereClauses[] = "pi.Strand = ?";
-        $params[] = $strandFilter;
+        $whereClauses[] = "pi.Strand LIKE ?";
+        $params[] = "%" . $strandFilter . "%";
         $types .= "s";
     }
 
     if (!empty($gradeLevelFilter) && $gradeLevelFilter !== 'all') {
-        $whereClauses[] = "pi.GradeLevel = ?";
-        $params[] = $gradeLevelFilter;
+        $whereClauses[] = "pi.GradeLevel LIKE ?";
+        $params[] = "%" . $gradeLevelFilter . "%";
         $types .= "s";
     }
 
@@ -94,7 +98,7 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
     }
 
     if (!empty($searchFilter)) {
-        $whereClauses[] = "(s.StudentID LIKE ? OR s.FirstName LIKE ? OR s.LastName LIKE ? OR CONCAT(s.FirstName, ' ', s.LastName) LIKE ?)";
+        $whereClauses[] = "(s.StudentID LIKE ? OR pi.FirstName LIKE ? OR pi.LastName LIKE ? OR CONCAT(pi.FirstName, ' ', pi.LastName) LIKE ?)";
         $searchLike = "%" . $searchFilter . "%";
         $params[] = $searchLike;
         $params[] = $searchLike;
@@ -106,7 +110,7 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
     $whereSql = "WHERE " . implode(" AND ", $whereClauses);
 
     $sql = "
-        SELECT a.AssessmentID, a.StudentID, s.FirstName, s.LastName, 
+        SELECT a.AssessmentID, a.StudentID, pi.FirstName, pi.LastName, 
                pi.Strand, pi.GradeLevel,
                r.PrimaryType, r.SecondaryType, r.TertiaryType,
                r.R_Score, r.I_Score, r.A_Score, r.S_Score, r.E_Score, r.C_Score,
@@ -122,12 +126,7 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
                 ORDER BY rec.Rank ASC) as RecommendedCourses
         FROM assessments a
         JOIN students s ON s.StudentID = a.StudentID
-        LEFT JOIN (
-            SELECT pi1.* FROM personal_information pi1
-            INNER JOIN (
-                SELECT MAX(PI_ID) as max_id FROM personal_information GROUP BY StudentID
-            ) pi2 ON pi1.PI_ID = pi2.max_id
-        ) pi ON pi.StudentID = s.StudentID
+        LEFT JOIN personal_information pi ON pi.PI_ID = a.PI_ID
         LEFT JOIN assessment_results r ON r.AssessmentID = a.AssessmentID
         LEFT JOIN rse_results rse ON rse.AssessmentID = a.AssessmentID
         LEFT JOIN cdses_results cdses ON cdses.AssessmentID = a.AssessmentID
