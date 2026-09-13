@@ -29,10 +29,83 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
         'ICT' => 'Information and Communication Technology',
         'Arts and Design' => 'Arts and Design Track'
     ];
-    
-    // We export the completed assessments for Archiving / Analysis
-    // Sub-join on personal_information ensures we only get the latest profile per student
-    $res = $conn->query("
+
+    // Filter Parameters
+    $statusFilter       = $_GET['status'] ?? 'all';
+    $strandFilter       = $_GET['strand'] ?? 'all';
+    $gradeLevelFilter   = $_GET['gradeLevel'] ?? 'all';
+    $dominantTypeFilter = $_GET['dominantType'] ?? 'all';
+    $rseLevelFilter     = $_GET['rseLevel'] ?? 'all';
+    $cdsesLevelFilter   = $_GET['cdsesLevel'] ?? 'all';
+    $searchFilter       = trim($_GET['search'] ?? '');
+    $dateFromFilter     = $_GET['dateFrom'] ?? '';
+    $dateToFilter       = $_GET['dateTo'] ?? '';
+
+    $whereClauses = ["a.Status != 'in_progress'"];
+    $params = [];
+    $types = "";
+
+    if (!empty($statusFilter) && $statusFilter !== 'all') {
+        $whereClauses[] = "a.Status = ?";
+        $params[] = $statusFilter;
+        $types .= "s";
+    }
+
+    if (!empty($strandFilter) && $strandFilter !== 'all') {
+        $whereClauses[] = "pi.Strand = ?";
+        $params[] = $strandFilter;
+        $types .= "s";
+    }
+
+    if (!empty($gradeLevelFilter) && $gradeLevelFilter !== 'all') {
+        $whereClauses[] = "pi.GradeLevel = ?";
+        $params[] = $gradeLevelFilter;
+        $types .= "s";
+    }
+
+    if (!empty($dominantTypeFilter) && $dominantTypeFilter !== 'all') {
+        $whereClauses[] = "r.PrimaryType = ?";
+        $params[] = $dominantTypeFilter;
+        $types .= "s";
+    }
+
+    if (!empty($rseLevelFilter) && $rseLevelFilter !== 'all') {
+        $whereClauses[] = "rse.Level = ?";
+        $params[] = $rseLevelFilter;
+        $types .= "s";
+    }
+
+    if (!empty($cdsesLevelFilter) && $cdsesLevelFilter !== 'all') {
+        $whereClauses[] = "cdses.SelfEfficacyLevel = ?";
+        $params[] = $cdsesLevelFilter;
+        $types .= "s";
+    }
+
+    if (!empty($dateFromFilter)) {
+        $whereClauses[] = "DATE(a.SubmittedAt) >= ?";
+        $params[] = $dateFromFilter;
+        $types .= "s";
+    }
+
+    if (!empty($dateToFilter)) {
+        $whereClauses[] = "DATE(a.SubmittedAt) <= ?";
+        $params[] = $dateToFilter;
+        $types .= "s";
+    }
+
+    if (!empty($searchFilter)) {
+        $whereClauses[] = "(s.StudentID LIKE ? OR s.FirstName LIKE ? OR s.LastName LIKE ? OR CONCAT(s.FirstName, ' ', s.LastName) LIKE ?)";
+        $searchLike = "%" . $searchFilter . "%";
+        $params[] = $searchLike;
+        $params[] = $searchLike;
+        $params[] = $searchLike;
+        $params[] = $searchLike;
+        $types .= "ssss";
+    }
+
+    $whereSql = "WHERE " . implode(" AND ", $whereClauses);
+
+    $sql = "
         SELECT a.AssessmentID, a.StudentID, s.FirstName, s.LastName, 
                pi.Strand, pi.GradeLevel,
                r.PrimaryType, r.SecondaryType, r.TertiaryType,
@@ -58,9 +131,18 @@ if ($method === 'GET' && isset($_GET['exportCsv'])) {
         LEFT JOIN assessment_results r ON r.AssessmentID = a.AssessmentID
         LEFT JOIN rse_results rse ON rse.AssessmentID = a.AssessmentID
         LEFT JOIN cdses_results cdses ON cdses.AssessmentID = a.AssessmentID
-        WHERE a.Status != 'in_progress'
+        $whereSql
         ORDER BY a.SubmittedAt DESC
-    ");
+    ";
+
+    if (!empty($params)) {
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+    } else {
+        $res = $conn->query($sql);
+    }
     
     $filename = "citadel_assessment_export_" . date('Y-m-d') . ".csv";
     

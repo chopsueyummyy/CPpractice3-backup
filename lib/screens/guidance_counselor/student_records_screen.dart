@@ -180,11 +180,22 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
       final String adminId = _session.counselorId?.toString() ?? '0';
       final String roleId = _session.roleId?.toString() ?? '2';
       
-      final Uri uri = Uri.parse(
-        '${ApiService.baseUrl}/admin_archive.php?exportCsv=1'
-        '&adminId=$adminId'
-        '&roleId=$roleId'
-      );
+      final String queryParams = [
+        'exportCsv=1',
+        'adminId=$adminId',
+        'roleId=$roleId',
+        'status=${Uri.encodeComponent(_status)}',
+        'strand=${Uri.encodeComponent(_strand)}',
+        'gradeLevel=${Uri.encodeComponent(_gradeLevel)}',
+        'dominantType=${Uri.encodeComponent(_dominantType)}',
+        'rseLevel=${Uri.encodeComponent(_rseLevel)}',
+        'cdsesLevel=${Uri.encodeComponent(_cdsesLevel)}',
+        'search=${Uri.encodeComponent(_search)}',
+        'dateFrom=${Uri.encodeComponent(_dateFrom)}',
+        'dateTo=${Uri.encodeComponent(_dateTo)}',
+      ].join('&');
+
+      final Uri uri = Uri.parse('${ApiService.baseUrl}/admin_archive.php?$queryParams');
       
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         throw 'Could not launch $uri';
@@ -193,7 +204,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Starting CSV Export...'),
+            content: Text('Starting Filtered CSV Export...'),
             backgroundColor: AppTheme.success,
           ),
         );
