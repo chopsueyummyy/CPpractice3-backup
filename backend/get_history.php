@@ -58,6 +58,11 @@ while ($row = $result->fetch_assoc()) {
     $cdses->execute();
     $cdsesRow = $cdses->get_result()->fetch_assoc();
 
+    $cf = $conn->prepare("SELECT FeedbackNotes, ReviewedAt FROM counselor_feedback WHERE AssessmentID = ? ORDER BY ReviewedAt DESC LIMIT 1");
+    $cf->bind_param("i", $row['AssessmentID']);
+    $cf->execute();
+    $cfRow = $cf->get_result()->fetch_assoc();
+
     $history[] = [
         "assessmentId"  => (int)$row['AssessmentID'],
         "assessmentNum" => $count++,
@@ -67,6 +72,8 @@ while ($row = $result->fetch_assoc()) {
         "secondaryType" => $row['SecondaryType'],
         "tertiaryType"  => $row['TertiaryType'],
         "courses"       => $courses,
+        "counselorNote" => $cfRow ? $cfRow['FeedbackNotes'] : null,
+        "notedAt"       => $cfRow ? $cfRow['ReviewedAt'] : null,
         "rse" => $rseRow ? [
             "score" => (int)$rseRow['Score'],
             "level" => $rseRow['Level']
