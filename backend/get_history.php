@@ -23,7 +23,7 @@ $stmt = $conn->prepare("
     FROM assessments a
     LEFT JOIN assessment_results ar ON ar.AssessmentID = a.AssessmentID
     WHERE a.StudentID = ?
-      AND a.Status IN ('approved', 'rejected')
+      AND a.Status IN ('approved', 'declined', 'rejected')
     ORDER BY a.SubmittedAt DESC
 ");
 $stmt->bind_param("s", $studentId);

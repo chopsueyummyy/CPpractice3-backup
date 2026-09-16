@@ -9,46 +9,51 @@ header("Access-Control-Allow-Headers: Content-Type");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 
 require_once 'db_connect.php';
+require_once __DIR__ . '/services/CacheService.php';
 
-// Fetch RIASEC questions
-$riasecResult = $conn->query("SELECT QuestionID, QuestionText, RIASECCategory FROM riasec_questions ORDER BY QuestionID");
-$riasec = [];
-while ($row = $riasecResult->fetch_assoc()) {
-    $riasec[] = [
-        "id"       => (int)$row['QuestionID'],
-        "question" => $row['QuestionText'],
-        "category" => $row['RIASECCategory']
+$response = CacheService::remember('questions_all', 3600, function() use ($conn) {
+    // Fetch RIASEC questions
+    $riasecResult = $conn->query("SELECT QuestionID, QuestionText, RIASECCategory FROM riasec_questions ORDER BY QuestionID");
+    $riasec = [];
+    while ($row = $riasecResult->fetch_assoc()) {
+        $riasec[] = [
+            "id"       => (int)$row['QuestionID'],
+            "question" => $row['QuestionText'],
+            "category" => $row['RIASECCategory']
+        ];
+    }
+
+    // Fetch RSE questions
+    $rseResult = $conn->query("SELECT QuestionID, QuestionText, IsNegative FROM rse_questions ORDER BY QuestionID");
+    $rse = [];
+    while ($row = $rseResult->fetch_assoc()) {
+        $rse[] = [
+            "id"         => (int)$row['QuestionID'],
+            "question"   => $row['QuestionText'],
+            "isNegative" => (int)$row['IsNegative']
+        ];
+    }
+
+    // Fetch CDSES questions
+    $cdsesResult = $conn->query("SELECT QuestionID, QuestionText, Subscale FROM cdses_questions ORDER BY QuestionID");
+    $cdses = [];
+    while ($row = $cdsesResult->fetch_assoc()) {
+        $cdses[] = [
+            "id"       => (int)$row['QuestionID'],
+            "question" => $row['QuestionText'],
+            "subscale" => $row['Subscale']
+        ];
+    }
+
+    return [
+        "status" => "success",
+        "riasec" => $riasec,
+        "rse"    => $rse,
+        "cdses"  => $cdses
     ];
-}
+});
 
-// Fetch RSE questions
-$rseResult = $conn->query("SELECT QuestionID, QuestionText, IsNegative FROM rse_questions ORDER BY QuestionID");
-$rse = [];
-while ($row = $rseResult->fetch_assoc()) {
-    $rse[] = [
-        "id"         => (int)$row['QuestionID'],
-        "question"   => $row['QuestionText'],
-        "isNegative" => (int)$row['IsNegative']
-    ];
-}
-
-// Fetch CDSES questions
-$cdsesResult = $conn->query("SELECT QuestionID, QuestionText, Subscale FROM cdses_questions ORDER BY QuestionID");
-$cdses = [];
-while ($row = $cdsesResult->fetch_assoc()) {
-    $cdses[] = [
-        "id"       => (int)$row['QuestionID'],
-        "question" => $row['QuestionText'],
-        "subscale" => $row['Subscale']
-    ];
-}
-
-echo json_encode([
-    "status" => "success",
-    "riasec" => $riasec,
-    "rse"    => $rse,
-    "cdses"  => $cdses
-]);
+echo json_encode($response);
 
 $conn->close();
 ?>

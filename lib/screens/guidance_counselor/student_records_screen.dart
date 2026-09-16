@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,6 +18,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
   final _session = SessionManager();
   List<Map<String, dynamic>> _records = [];
   bool _isLoading = true;
+  Timer? _debounceTimer;
 
   // Filters
   String _status       = 'all';
@@ -102,6 +104,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -302,8 +305,17 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
                                 )
                               : null,
                         ),
-                        onChanged: (v) => setState(() => _search = v),
-                        onSubmitted: (_) => _loadRecords(),
+                        onChanged: (v) {
+                          setState(() => _search = v);
+                          _debounceTimer?.cancel();
+                          _debounceTimer = Timer(const Duration(milliseconds: 250), () {
+                            _loadRecords();
+                          });
+                        },
+                        onSubmitted: (_) {
+                          _debounceTimer?.cancel();
+                          _loadRecords();
+                        },
                       ),
                     ),
                     const SizedBox(width: 10),

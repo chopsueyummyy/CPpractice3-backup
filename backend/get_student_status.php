@@ -30,9 +30,13 @@ $row = $stmt->get_result()->fetch_assoc();
 if (!$row) {
     echo json_encode(["status" => "success", "assessmentStatus" => null, "assessmentId" => null]);
 } else {
+    $status = $row['Status'];
+    if ($status === 'declined') {
+        $status = 'rejected';
+    }
     echo json_encode([
         "status"           => "success",
-        "assessmentStatus" => $row['Status'],
+        "assessmentStatus" => $status,
         "assessmentId"     => (int)$row['AssessmentID']
     ]);
 }

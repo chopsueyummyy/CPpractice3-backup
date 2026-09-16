@@ -69,11 +69,10 @@ if (!empty($dateTo)) {
     $types   .= "s";
 }
 if (!empty($search)) {
-    $where[] = "(pi.FirstName LIKE ? OR pi.LastName LIKE ? OR s.StudentID LIKE ?)";
+    $where[] = "(CONCAT(IFNULL(pi.FirstName,''), ' ', IFNULL(pi.MiddleName,''), ' ', IFNULL(pi.LastName,'')) LIKE ? OR s.StudentID LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
-    $params[] = "%$search%";
-    $types   .= "sss";
+    $types   .= "ss";
 }
 
 $whereClause = implode(" AND ", $where);

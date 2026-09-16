@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit();
 
 require_once 'db_connect.php';
 require_once 'mailer.php';
+require_once __DIR__ . '/services/CacheService.php';
 
 $data         = json_decode(file_get_contents("php://input"), true);
 $assessmentId = (int)($data['assessmentId'] ?? 0);
@@ -22,7 +23,7 @@ if (!$assessmentId || !in_array($action, ['approved', 'rejected']) || !$counselo
     exit();
 }
 
-$dbAction = ($action === 'rejected') ? 'rejected' : $action;
+$dbAction = ($action === 'rejected') ? 'declined' : $action;
 
 $upd = $conn->prepare("UPDATE assessments SET Status = ? WHERE AssessmentID = ?");
 $upd->bind_param("si", $dbAction, $assessmentId);
@@ -38,6 +39,9 @@ $fb = $conn->prepare("
 ");
 $fb->bind_param("iiss", $assessmentId, $counselorId, $dbAction, $notes);
 $fb->execute();
+
+// Flush dashboard stats cache so counselor dashboard updates immediately
+CacheService::flush();
 
 $stuQuery = $conn->prepare("
     SELECT s.Email, s.FirstName 

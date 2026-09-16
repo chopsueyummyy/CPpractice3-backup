@@ -53,6 +53,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       case 'approved':
         return 'Assessment Completed';
       case 'rejected':
+      case 'declined':
         return 'Retake Assessment';
       default:
         return 'Start Test';
@@ -62,6 +63,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   bool get _buttonEnabled {
     return _assessmentStatus == null || 
            _assessmentStatus == 'rejected' || 
+           _assessmentStatus == 'declined' || 
            _assessmentStatus == 'in_progress';
   }
 
@@ -74,6 +76,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       case 'approved':
         return Icons.check_circle;
       case 'rejected':
+      case 'declined':
         return Icons.refresh;
       default:
         return Icons.quiz;
@@ -89,6 +92,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       case 'approved':
         return AppTheme.success;
       case 'rejected':
+      case 'declined':
         return AppTheme.warning;
       default:
         return AppTheme.primaryYellow;
@@ -257,7 +261,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                       ? 'Your results have been approved. Check your results in the sidebar or click below to view your Course recommendations.'
                                       : _assessmentStatus == 'pending_review'
                                           ? 'Your guidance counselor is currently reviewing your assessment. Please wait for authorization.'
-                                          : _assessmentStatus == 'rejected'
+                                          : (_assessmentStatus == 'rejected' || _assessmentStatus == 'declined')
                                               ? 'Your counselor has requested you to retake the assessment. Press start to proceed.'
                                               : 'Kickstart your journey by taking our Course Assessment to discover the best course path for you today!',
                                   textAlign: TextAlign.center,
