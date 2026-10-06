@@ -22,20 +22,64 @@ final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
   redirect: (context, state) {
     final session = SessionManager();
-    final status = session.assessmentStatus;
-    
-    // Check if the user is trying to access assessment-related student routes
-    final path = state.uri.path.replaceAll('_', '-'); // Handle potential underscore typos
-    final isAssessmentRoute = path.startsWith('/student/assessment') ||
-                              path.contains('student-details') ||
-                              path.contains('student_details') ||
-                              path == '/student/assessment-instructions';
-    
-    // Lockdown logic: check LocalStorage status immediately
-    if (isAssessmentRoute && (status == 'pending_review' || status == 'approved')) {
-      return '/student/dashboard';
+    final path = state.uri.path.replaceAll('_', '-');
+
+    final bool isStudentLoggedIn = session.studentId != null && session.studentId!.isNotEmpty && session.role == 'student';
+    final bool isCounselorLoggedIn = session.counselorId != null && session.role == 'guidance_counselor';
+    final bool isAdminLoggedIn = session.adminId != null && (session.role == 'admin' || session.role == 'super_admin');
+    final bool isAuthenticated = isStudentLoggedIn || isCounselorLoggedIn || isAdminLoggedIn;
+
+    final bool isPublicRoute = path == '/login' || path == '/register' || path == '/verify-otp';
+
+    // 1. Unauthenticated users trying to access protected routes -> redirect to /login
+    if (!isAuthenticated && !isPublicRoute) {
+      return '/login';
     }
-    
+
+    // 2. Authenticated users trying to access login or register -> redirect to respective dashboard
+    if (isAuthenticated && (path == '/login' || path == '/register')) {
+      if (isStudentLoggedIn) return '/student/dashboard';
+      if (isCounselorLoggedIn) return '/guidance-counselor/dashboard';
+      if (isAdminLoggedIn) return '/admin/dashboard';
+    }
+
+    // 3. Student Route Protections
+    if (path.startsWith('/student/')) {
+      if (!isStudentLoggedIn) {
+        if (isCounselorLoggedIn) return '/guidance-counselor/dashboard';
+        if (isAdminLoggedIn) return '/admin/dashboard';
+        return '/login';
+      }
+
+      // Assessment lockdown logic: check LocalStorage status immediately
+      final status = session.assessmentStatus;
+      final isAssessmentRoute = path.startsWith('/student/assessment') ||
+                                path.contains('student-details') ||
+                                path == '/student/assessment-instructions';
+      
+      if (isAssessmentRoute && (status == 'pending_review' || status == 'approved')) {
+        return '/student/dashboard';
+      }
+    }
+
+    // 4. Guidance Counselor Route Protections
+    if (path.startsWith('/guidance-counselor/')) {
+      if (!isCounselorLoggedIn) {
+        if (isStudentLoggedIn) return '/student/dashboard';
+        if (isAdminLoggedIn) return '/admin/dashboard';
+        return '/login';
+      }
+    }
+
+    // 5. Admin Route Protections
+    if (path.startsWith('/admin/')) {
+      if (!isAdminLoggedIn) {
+        if (isStudentLoggedIn) return '/student/dashboard';
+        if (isCounselorLoggedIn) return '/guidance-counselor/dashboard';
+        return '/login';
+      }
+    }
+
     return null; // No redirection needed
   },
   routes: [

@@ -177,12 +177,21 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
+  static Future<Map<String, dynamic>> getCourseCatalog() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/get_courses.php'),
+      headers: _headers,
+    );
+    return jsonDecode(response.body);
+  }
+
   static Future<Map<String, dynamic>> submitFeedback({
     required int assessmentId,
     required int counselorId,
     required String action,
     String? feedbackNotes,
     int? modifiedCourseId,
+    dynamic curatedRecommendations,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/submit_feedback.php'),
@@ -193,6 +202,7 @@ class ApiService {
         'action': action,
         'feedbackNotes': feedbackNotes,
         'modifiedCourseId': modifiedCourseId,
+        'curatedRecommendations': curatedRecommendations,
       }),
     );
     return jsonDecode(response.body);

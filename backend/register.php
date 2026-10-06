@@ -30,6 +30,14 @@ try {
         throw new Exception("ID Number, Email, and Password are all required.");
     }
 
+    if (!ctype_digit($studentId)) {
+        throw new Exception("Student ID Number must contain digits only.");
+    }
+
+    if (strlen($studentId) > 6) {
+        throw new Exception("Student ID Number cannot exceed 6 digits.");
+    }
+
     if (!filter_var($email, FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
         throw new Exception("Please provide a valid email address.");
     }

@@ -60,7 +60,7 @@ function sendAssessmentEmail($toEmail, $studentName, $status, $notes, $adminEmai
         ";
     }
 
-    $appUrl = getenv('APP_URL') ?: 'http://localhost:8080/#/login';
+    $appUrl = getenv('APP_URL') ?: 'https://coursealign-app-c5wcx.ondigitalocean.app/#/login';
 
     $ctaButtonText = $isApproved ? '📊 Access Student Portal' : '🔄 Start Retake Assessment';
     $ctaButtonColor = $isApproved ? '#27AE60' : '#E74C3C';

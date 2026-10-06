@@ -97,9 +97,17 @@ try {
     }
 
     if ($role === 'student' || $role === 'student_role') {
-        $student_id = $data['student_id'] ?? '';
+        $student_id = trim($data['student_id'] ?? '');
         if (empty($student_id)) {
             die(json_encode(["status" => "error", "message" => "Student ID is required"]));
+        }
+
+        if (!ctype_digit($student_id)) {
+            die(json_encode(["status" => "error", "message" => "Student ID must contain digits only."]));
+        }
+
+        if (strlen($student_id) > 6) {
+            die(json_encode(["status" => "error", "message" => "Student ID cannot exceed 6 digits."]));
         }
 
         $stmt = $conn->prepare("SELECT StudentID, FirstName, LastName, Password, IsBlocked FROM students WHERE StudentID = ? LIMIT 1");

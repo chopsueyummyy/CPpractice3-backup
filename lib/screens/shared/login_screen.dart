@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -333,16 +334,28 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             keyboardType: _userType == 'student'
-                                ? TextInputType.text
+                                ? TextInputType.number
                                 : TextInputType.emailAddress,
+                            inputFormatters: _userType == 'student'
+                                ? [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(6),
+                                  ]
+                                : null,
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
+                              if (value == null || value.trim().isEmpty) {
                                 return _userType == 'student'
                                     ? 'Please enter your Student ID'
                                     : 'Please enter your email';
                               }
-                              if (_userType != 'student' &&
-                                  !value.contains('@')) {
+                              if (_userType == 'student') {
+                                if (!RegExp(r'^\d+$').hasMatch(value.trim())) {
+                                  return 'Student ID must contain digits only';
+                                }
+                                if (value.trim().length > 6) {
+                                  return 'Student ID cannot exceed 6 digits';
+                                }
+                              } else if (!value.contains('@')) {
                                 return 'Please enter a valid email';
                               }
                               return null;

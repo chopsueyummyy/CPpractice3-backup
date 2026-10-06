@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -216,7 +217,22 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
                                   prefixIcon: Icon(Icons.badge),
                                 ),
                                 keyboardType: TextInputType.number,
-                                validator: (value) => (value == null || value.isEmpty) ? 'Please enter your ID Number' : null,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(6),
+                                ],
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter your ID Number';
+                                  }
+                                  if (!RegExp(r'^\d+$').hasMatch(value.trim())) {
+                                    return 'ID Number must contain digits only';
+                                  }
+                                  if (value.trim().length > 6) {
+                                    return 'ID Number cannot exceed 6 digits';
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 16),
 

@@ -17,6 +17,8 @@ $action         = $data['action']         ?? ''; // approved, declined, modified
 $feedbackNotes  = $data['feedbackNotes']  ?? null;
 $modifiedCourseId = $data['modifiedCourseId'] ?? null;
 
+$curatedRecommendations = $data['curatedRecommendations'] ?? null;
+
 if (empty($assessmentId) || empty($counselorId) || empty($action)) {
     echo json_encode(["status" => "error", "message" => "Missing required fields"]);
     exit();
@@ -38,6 +40,14 @@ if ($stmt->execute()) {
     $upd = $conn->prepare("UPDATE assessments SET Status = ? WHERE AssessmentID = ?");
     $upd->bind_param("si", $newStatus, $assessmentId);
     $upd->execute();
+
+    // If counselor customized / swapped recommended courses under clusters, update assessment_results
+    if (!empty($curatedRecommendations)) {
+        $jsonCurated = is_string($curatedRecommendations) ? $curatedRecommendations : json_encode($curatedRecommendations);
+        $updRes = $conn->prepare("UPDATE assessment_results SET ClusterRecommendations = ? WHERE AssessmentID = ?");
+        $updRes->bind_param("si", $jsonCurated, $assessmentId);
+        $updRes->execute();
+    }
 
     echo json_encode(["status" => "success", "message" => "Feedback submitted successfully"]);
 } else {

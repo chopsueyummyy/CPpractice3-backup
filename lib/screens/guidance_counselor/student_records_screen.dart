@@ -14,11 +14,12 @@ class StudentRecordsScreen extends StatefulWidget {
   State<StudentRecordsScreen> createState() => _StudentRecordsScreenState();
 }
 
-class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
+class _StudentRecordsScreenState extends State<StudentRecordsScreen> with WidgetsBindingObserver {
   final _session = SessionManager();
   List<Map<String, dynamic>> _records = [];
   bool _isLoading = true;
   Timer? _debounceTimer;
+  Timer? _autoRefreshTimer;
 
   // Filters
   String _status       = 'all';
@@ -99,18 +100,35 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadRecords();
+    // Auto-refresh every 20 seconds in background
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (mounted) _loadRecords(isBackground: true);
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autoRefreshTimer?.cancel();
     _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadRecords() async {
-    setState(() => _isLoading = true);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadRecords(isBackground: true);
+    }
+  }
+
+  Future<void> _loadRecords({bool isBackground = false}) async {
+    if (!mounted) return;
+    if (!isBackground) {
+      setState(() => _isLoading = true);
+    }
     try {
       final data = await ApiService.getStudentRecords(
         status: _status,
@@ -123,11 +141,11 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> {
         dateTo: _dateTo,
         search: _search,
       );
-      if (data['status'] == 'success') {
+      if (data['status'] == 'success' && mounted) {
         setState(() => _records = List<Map<String, dynamic>>.from(data['records']));
       }
     } catch (_) {}
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _resetFilters() {

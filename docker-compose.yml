@@ -29,6 +29,7 @@ services:
       - DB_NAME=riasec_db
       - DB_USER=riasec_user
       - DB_PASS=riasec_password
+      - APP_URL=${APP_URL:-https://coursealign-app-c5wcx.ondigitalocean.app/#/login}
       - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
       - SMTP_USER=${SMTP_USER:-your_email@gmail.com}
       - SMTP_PASS=${SMTP_PASS:-your_app_password}
