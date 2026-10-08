@@ -19,7 +19,7 @@ if (empty($studentId)) {
 $stmt = $conn->prepare("
     SELECT a.AssessmentID, a.Status, a.SubmittedAt,
            ar.PrimaryType, ar.SecondaryType, ar.TertiaryType,
-           ar.ResultID
+           ar.ResultID, ar.ClusterRecommendations
     FROM assessments a
     LEFT JOIN assessment_results ar ON ar.AssessmentID = a.AssessmentID
     WHERE a.StudentID = ?
@@ -48,6 +48,8 @@ while ($row = $result->fetch_assoc()) {
         }
     }
 
+    $clusterRecommendations = !empty($row['ClusterRecommendations']) ? json_decode($row['ClusterRecommendations'], true) : null;
+
     $rse = $conn->prepare("SELECT Score, Level FROM rse_results WHERE AssessmentID = ?");
     $rse->bind_param("i", $row['AssessmentID']);
     $rse->execute();
@@ -64,16 +66,17 @@ while ($row = $result->fetch_assoc()) {
     $cfRow = $cf->get_result()->fetch_assoc();
 
     $history[] = [
-        "assessmentId"  => (int)$row['AssessmentID'],
-        "assessmentNum" => $count++,
-        "status"        => $row['Status'],
-        "submittedAt"   => $row['SubmittedAt'],
-        "primaryType"   => $row['PrimaryType'],
-        "secondaryType" => $row['SecondaryType'],
-        "tertiaryType"  => $row['TertiaryType'],
-        "courses"       => $courses,
-        "counselorNote" => $cfRow ? $cfRow['FeedbackNotes'] : null,
-        "notedAt"       => $cfRow ? $cfRow['ReviewedAt'] : null,
+        "assessmentId"           => (int)$row['AssessmentID'],
+        "assessmentNum"          => $count++,
+        "status"                 => $row['Status'],
+        "submittedAt"            => $row['SubmittedAt'],
+        "primaryType"            => $row['PrimaryType'],
+        "secondaryType"          => $row['SecondaryType'],
+        "tertiaryType"           => $row['TertiaryType'],
+        "courses"                => $courses,
+        "clusterRecommendations" => $clusterRecommendations,
+        "counselorNote"          => $cfRow ? $cfRow['FeedbackNotes'] : null,
+        "notedAt"                => $cfRow ? $cfRow['ReviewedAt'] : null,
         "rse" => $rseRow ? [
             "score" => (int)$rseRow['Score'],
             "level" => $rseRow['Level']

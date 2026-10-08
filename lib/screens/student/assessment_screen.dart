@@ -695,24 +695,25 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                             decoration: BoxDecoration(
-                                              color: AppTheme.primaryPurple.withOpacity(0.1),
+                                              color: partThemeColor.withOpacity(0.08),
                                               borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: partThemeColor.withOpacity(0.2), width: 1),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Icon(partIcon, size: 14, color: AppTheme.primaryPurple),
+                                                Icon(partIcon, size: 14, color: partThemeColor),
                                                 const SizedBox(width: 6),
                                                 Text(
                                                   type == 'riasec'
-                                                      ? 'Career Statement'
+                                                      ? 'RIASEC • Career Interest'
                                                       : type == 'rse'
-                                                          ? 'Self-Esteem Item'
-                                                          : 'Decision Confidence Task',
+                                                          ? 'RSE • Self-Esteem Scale'
+                                                          : 'CDSES • Career Decision Self-Efficacy',
                                                   style: GoogleFonts.plusJakartaSans(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w700,
-                                                    color: AppTheme.primaryPurple,
+                                                    color: partThemeColor,
                                                   ),
                                                 ),
                                               ],

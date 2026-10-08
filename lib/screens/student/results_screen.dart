@@ -939,8 +939,129 @@ class _ResultsScreenState extends State<ResultsScreen> {
               }
             },
           ),
+          _buildHowToReadRecommendationsCard(isDark),
         ],
       ),
+    );
+  }
+
+  Widget _buildHowToReadRecommendationsCard(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F1D2B) : const Color(0xFFF9F5FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppTheme.primaryPurple.withOpacity(0.3) : AppTheme.primaryPurple.withOpacity(0.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryPurple.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppTheme.primaryPurple,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'How to read your recommendations',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppTheme.primaryPurple,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildHowToReadItem(
+            title: 'Primary Recommendation',
+            description: 'This is the Course Cluster that the system ranked first based on your assessment results. It received the highest predicted probability among the available Course Clusters.',
+            isDark: isDark,
+            accentColor: const Color(0xFFD97706),
+          ),
+          const SizedBox(height: 12),
+          _buildHowToReadItem(
+            title: 'Alternative Recommendation',
+            description: 'This is the Course Cluster that the system ranked second. It is another option that may also be worth considering based on your assessment results.',
+            isDark: isDark,
+            accentColor: AppTheme.primaryPurple,
+          ),
+          const SizedBox(height: 12),
+          _buildHowToReadItem(
+            title: 'Additional Recommendation',
+            description: 'This is the Course Cluster that the system ranked third. It gives you another option to explore based on your assessment results.',
+            isDark: isDark,
+            accentColor: const Color(0xFF0D9488),
+          ),
+          const SizedBox(height: 12),
+          _buildHowToReadItem(
+            title: 'Predicted Probability',
+            description: 'This percentage shows how strongly the model predicted each Course Cluster based on your assessment results. A higher percentage means the Course Cluster was ranked higher by the model. It does not guarantee that you will be successful in that Course Cluster.',
+            isDark: isDark,
+            accentColor: const Color(0xFF6366F1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHowToReadItem({
+    required String title,
+    required String description,
+    required bool isDark,
+    required Color accentColor,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: accentColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.only(left: 14),
+          child: Text(
+            description,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              height: 1.4,
+              color: isDark ? Colors.grey[300] : const Color(0xFF64748B),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1045,12 +1166,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   children: [
                     const Icon(Icons.auto_awesome, color: AppTheme.primaryPurple, size: 14),
                     const SizedBox(width: 6),
-                    Text(
-                      'Why this cluster was recommended',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryPurple,
+                    Expanded(
+                      child: Text(
+                        'Why this cluster was recommended',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryPurple,
+                        ),
                       ),
                     ),
                   ],
@@ -1370,7 +1493,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Counselor Notes & Guidance',
+                'Counselor\'s Note',
                 style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: isDark ? Colors.white : const Color(0xFF1E293B)),
               ),
             ],
@@ -1406,10 +1529,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   style: GoogleFonts.plusJakartaSans(fontSize: 12.5, height: 1.5, color: isDark ? Colors.white70 : const Color(0xFF334155)),
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 6,
                   children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF64748B)),
                         const SizedBox(width: 6),
@@ -1576,7 +1703,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'These recommendations represent the best course matches based on your assessment results. They are intended to support—not replace—your personal judgment and the guidance provided by your Guidance Counselor. While the system identifies courses that are compatible with your assessment profile, it does not guarantee academic success or future career outcomes.',
+              'These recommendations are intended to support—not replace—your personal judgment and the guidance provided by your Guidance Counselor. While the system identifies courses that are compatible with your assessment profile, it does not guarantee academic success or future career outcomes.',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
                 height: 1.45,
@@ -1613,57 +1740,88 @@ class _ResultsScreenState extends State<ResultsScreen> {
     required String badgeLabel,
     required bool isDark,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryPurple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: AppTheme.primaryPurple, size: 22),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryPurple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: AppTheme.primaryPurple, size: 22),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        ),
+                      ),
+                      if (isMobile && badgeLabel.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryPurple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            badgeLabel,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryPurple,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryPurple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            badgeLabel,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryPurple,
+                if (!isMobile && badgeLabel.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryPurple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      badgeLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryPurple,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                color: isDark ? Colors.white70 : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

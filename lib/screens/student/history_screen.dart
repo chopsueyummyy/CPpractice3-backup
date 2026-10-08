@@ -328,12 +328,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final pl = cdsesData?['plScore'] ?? 3.8;
     final ps = cdsesData?['psScore'] ?? 4.2;
 
-    // Courses
+    // Courses & Cluster Recommendations
     final courses = List<String>.from(item['courses'] ?? [
       'Bachelor of Science in Computer Science',
       'Bachelor of Science in Architecture',
       'Bachelor of Science in Mechanical Engineering',
     ]);
+    final clusterRecs = item['clusterRecommendations'] as List<dynamic>?;
 
     // Counselor note
     final noteText = item['counselorNote']?.toString();
@@ -485,8 +486,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Row 2: Recommended Courses
-                  _buildRecommendedCoursesSection(courses, isDark),
+                  // Row 2: Recommended Course Clusters
+                  _buildRecommendedCoursesSection(clusterRecs, courses, isDark),
 
                   // Row 3: Counselor Notes & Guidance (Only if note exists)
                   if (noteText != null && noteText.trim().isNotEmpty) ...[
@@ -669,7 +670,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildRecommendedCoursesSection(List<String> courses, bool isDark) {
+  Widget _buildRecommendedCoursesSection(List<dynamic>? clusterRecs, List<String> courses, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -681,11 +682,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 color: AppTheme.primaryPurple.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.school_outlined, color: AppTheme.primaryPurple, size: 18),
+              child: const Icon(Icons.hub_rounded, color: AppTheme.primaryPurple, size: 18),
             ),
             const SizedBox(width: 10),
             Text(
-              'Recommended Courses',
+              'Top Recommended Course Clusters',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -695,28 +696,125 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 8,
-          children: courses.map((course) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryPurple.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.primaryPurple.withOpacity(0.15)),
-              ),
-              child: Text(
-                course,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryPurple,
+        if (clusterRecs != null && clusterRecs.isNotEmpty) ...[
+          Column(
+            children: clusterRecs.map((cluster) {
+              final rank = (cluster['rank'] as num?)?.toInt() ?? 1;
+              final clusterName = (cluster['cluster_name'] ?? 'General Cluster').toString();
+              final exploreCourses = List<String>.from(cluster['explore_courses'] ?? []);
+
+              Color rankColor;
+              String badgeTitle;
+              if (rank == 1) {
+                rankColor = const Color(0xFFD97706);
+                badgeTitle = '🥇 Primary Recommendation';
+              } else if (rank == 2) {
+                rankColor = const Color(0xFF7C3AED);
+                badgeTitle = '🥈 Alternative Recommendation';
+              } else {
+                rankColor = const Color(0xFF0D9488);
+                badgeTitle = '🥉 Additional Recommendation';
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: rankColor.withOpacity(0.35), width: 1.2),
                 ),
-              ),
-            );
-          }).toList(),
-        ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: rankColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            badgeTitle,
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: rankColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      clusterName,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    if (exploreCourses.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        '📌 Courses you might want to explore:',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: exploreCourses.map((c) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryPurple.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppTheme.primaryPurple.withOpacity(0.15)),
+                            ),
+                            child: Text(
+                              c,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.primaryPurple,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ] else ...[
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: courses.map((course) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryPurple.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.primaryPurple.withOpacity(0.15)),
+                ),
+                child: Text(
+                  course,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryPurple,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ],
     );
   }
@@ -744,7 +842,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(width: 10),
               Text(
-                'Counselor Notes & Guidance',
+                'Counselor\'s Note',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,

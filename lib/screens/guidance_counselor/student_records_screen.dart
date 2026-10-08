@@ -198,7 +198,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
 
   Future<void> _downloadIndividualPdf(int assessmentId) async {
     try {
-      final Uri uri = Uri.parse('${ApiService.baseUrl}/export_student_pdf.php?assessmentId=$assessmentId');
+      final Uri uri = Uri.parse('${ApiService.baseUrl}/export_student_pdf.php?assessmentId=$assessmentId&t=${DateTime.now().millisecondsSinceEpoch}');
       
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         throw 'Could not launch $uri';
@@ -1072,7 +1072,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
                                       if (r['feedbackNotes'] != null && (r['feedbackNotes'] as String).isNotEmpty) ...[
                                         const Divider(height: 24),
                                         Text(
-                                          'Counselor Notes',
+                                          'Counselor\'s Note',
                                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryPurple),
                                         ),
                                         const SizedBox(height: 8),

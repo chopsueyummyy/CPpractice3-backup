@@ -43,7 +43,7 @@ function sendAssessmentEmail($toEmail, $studentName, $status, $notes, $adminEmai
 
     $nextStepsText = $isApproved
         ? 'Your personalized career recommendations, Holland Code breakdown, and course compatibility reports are now unlocked on your student dashboard.'
-        : 'The <strong>Retake Assessment</strong> button is now active on your Student Portal. Please log in, review the counselor guidance notes above, and submit a new assessment.';
+        : 'The <strong>Retake Assessment</strong> button is now active on your Student Portal. Please log in, review the counselor\'s note above, and submit a new assessment.';
 
     $notesSection = '';
     if (!empty($notes)) {
@@ -51,7 +51,7 @@ function sendAssessmentEmail($toEmail, $studentName, $status, $notes, $adminEmai
         $notesSection = "
             <div style='margin-top: 20px; margin-bottom: 20px;'>
                 <div style='font-size: 13px; font-weight: bold; color: #2d3436; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
-                    💬 Counselor Notes & Guidance:
+                    💬 Counselor's Note:
                 </div>
                 <div style='background-color: {$notesBgColor}; padding: 16px; border-left: 4px solid {$notesHeaderColor}; border-radius: 4px; font-size: 14px; color: #2d3436; line-height: 1.5;'>
                     {$cleanNotes}
