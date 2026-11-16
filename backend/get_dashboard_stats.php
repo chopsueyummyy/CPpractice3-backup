@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 error_reporting(0);
 ini_set('display_errors', 0);
 header("Content-Type: application/json");
@@ -275,6 +275,66 @@ $response = CacheService::remember("dashboard_stats_" . $filter, 60, function() 
         ];
     }
 
+    // 10. Activity trend (submissions vs. released advisories)
+    //     today/week -> last 7 days, month -> last 30 days, all -> last 12 weeks
+    $trendMode = ($filter === 'all') ? 'weekly' : 'daily';
+    $trendDays = ($filter === 'month') ? 30 : 7;
+    $today = new DateTime('today');
+    if ($trendMode === 'weekly') {
+        $firstBucket = (clone $today)->modify('monday this week')->modify('-11 weeks');
+    } else {
+        $firstBucket = (clone $today)->modify('-' . ($trendDays - 1) . ' days');
+    }
+    $startStr = $firstBucket->format('Y-m-d');
+
+    $submittedByDay = [];
+    $res = $conn->query("
+        SELECT DATE(SubmittedAt) AS d, COUNT(*) AS c
+        FROM assessments
+        WHERE SubmittedAt IS NOT NULL AND SubmittedAt >= '$startStr'
+        GROUP BY DATE(SubmittedAt)
+    ");
+    while ($res && $row = $res->fetch_assoc()) { $submittedByDay[$row['d']] = (int)$row['c']; }
+
+    $releasedByDay = [];
+    $res = $conn->query("
+        SELECT DATE(ReviewedAt) AS d, COUNT(DISTINCT AssessmentID) AS c
+        FROM counselor_feedback
+        WHERE ReviewerRole = 'guidance_counselor' AND Action <> 'declined' AND ReviewedAt >= '$startStr'
+        GROUP BY DATE(ReviewedAt)
+    ");
+    while ($res && $row = $res->fetch_assoc()) { $releasedByDay[$row['d']] = (int)$row['c']; }
+
+    $activityTrend = [];
+    if ($trendMode === 'weekly') {
+        for ($i = 0; $i < 12; $i++) {
+            $ws = (clone $firstBucket)->modify("+$i weeks");
+            $sub = 0; $rel = 0;
+            for ($d = 0; $d < 7; $d++) {
+                $k = (clone $ws)->modify("+$d days")->format('Y-m-d');
+                $sub += $submittedByDay[$k] ?? 0;
+                $rel += $releasedByDay[$k] ?? 0;
+            }
+            $we = (clone $ws)->modify('+6 days');
+            $activityTrend[] = [
+                "label"     => $ws->format('M j'),
+                "rangeText" => $ws->format('M j') . ' - ' . $we->format('M j'),
+                "submitted" => $sub,
+                "released"  => $rel
+            ];
+        }
+    } else {
+        for ($i = 0; $i < $trendDays; $i++) {
+            $day = (clone $firstBucket)->modify("+$i days");
+            $k = $day->format('Y-m-d');
+            $activityTrend[] = [
+                "label"     => $day->format('M j'),
+                "rangeText" => $day->format('D, M j'),
+                "submitted" => $submittedByDay[$k] ?? 0,
+                "released"  => $releasedByDay[$k] ?? 0
+            ];
+        }
+    }
     $activeStrandsCount = count($strandStats);
 
     return [
@@ -298,7 +358,9 @@ $response = CacheService::remember("dashboard_stats_" . $filter, 60, function() 
         "riasecStats"                 => $riasecStats,
         "rseStats"                    => $rseStats,
         "cdsesStats"                  => $cdsesStats,
-        "recentActivity"              => $recentActivity
+        "recentActivity"              => $recentActivity,
+        "activityTrend"               => $activityTrend,
+        "trendMode"                   => $trendMode
     ];
 });
 

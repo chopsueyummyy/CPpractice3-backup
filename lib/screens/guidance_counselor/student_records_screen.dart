@@ -10,7 +10,13 @@ import '../../widgets/counselor_sidebar.dart';
 import '../../widgets/jmcfi_badge.dart';
 
 class StudentRecordsScreen extends StatefulWidget {
-  const StudentRecordsScreen({super.key});
+  final String? initialStrand;
+  final String? initialDominantType;
+  const StudentRecordsScreen({
+    super.key,
+    this.initialStrand,
+    this.initialDominantType,
+  });
 
   @override
   State<StudentRecordsScreen> createState() => _StudentRecordsScreenState();
@@ -131,6 +137,10 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final s = widget.initialStrand;
+    if (s != null && _strandOptions.containsKey(s)) _strand = s;
+    final dt = widget.initialDominantType;
+    if (dt != null && _typeOptions.containsKey(dt)) _dominantType = dt;
     _loadRecords();
     // Auto-refresh every 20 seconds in background
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
@@ -472,7 +482,18 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
     return Scaffold(
       drawer: CounselorSidebar(currentRoute: '$prefix/student-records'),
       appBar: AppBar(
-        title: Text(isPsych ? 'Test Records Archive' : 'Student Records'),
+        title: Builder(
+          builder: (context) {
+            final isNarrow = MediaQuery.of(context).size.width < 450;
+            return Text(
+              isNarrow
+                  ? (isPsych ? 'Test Records' : 'Student Records')
+                  : (isPsych ? 'Test Records Archive' : 'Student Records Directory'),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            );
+          },
+        ),
         leading: Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu),
@@ -1201,6 +1222,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
             LayoutBuilder(
               builder: (context, constraints) {
                 final int crossAxisCount = constraints.maxWidth >= 1050 ? 3 : (constraints.maxWidth >= 650 ? 2 : 1);
+                final double mainAxisExtent = constraints.maxWidth < 500 ? 232 : 220;
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1209,7 +1231,7 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
-                    mainAxisExtent: 220,
+                    mainAxisExtent: mainAxisExtent,
                   ),
                   itemBuilder: (context, index) {
                     return _buildStudentGridCard(_pagedRecords[index]);
@@ -1234,101 +1256,112 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
 
     return Padding(
       padding: const EdgeInsets.only(top: 14, bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          OutlinedButton.icon(
-            onPressed: _currentPage > 0
-                ? () {
-                    setState(() => _currentPage--);
-                    _scrollController.animateTo(
-                      220,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 500;
+          return Center(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _currentPage > 0
+                        ? () {
+                            setState(() => _currentPage--);
+                            _scrollController.animateTo(
+                              220,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.chevron_left, size: 16),
+                    label: Text(isNarrow ? 'Prev' : 'Previous', style: const TextStyle(fontSize: 11)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryPurple,
+                      side: BorderSide(color: Colors.purple.shade200),
+                      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 8 : 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  SizedBox(width: isNarrow ? 6 : 12),
+                  // Page number buttons
+                  ...List.generate(_totalPages, (i) {
+                    if (_totalPages > 7) {
+                      if (i != 0 && i != _totalPages - 1 && (i < _currentPage - 1 || i > _currentPage + 1)) {
+                        if (i == _currentPage - 2 || i == _currentPage + 2) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Text('...', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }
+                    }
+                    final isSelected = i == _currentPage;
+                    return Padding(
+                      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 2 : 3),
+                      child: InkWell(
+                        onTap: () {
+                          setState(() => _currentPage = i);
+                          _scrollController.animateTo(
+                            220,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: isNarrow ? 30 : 34,
+                          height: isNarrow ? 30 : 34,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.primaryPurple : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.primaryPurple : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontSize: isNarrow ? 11 : 12,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                              color: isSelected ? Colors.white : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
                     );
-                  }
-                : null,
-            icon: const Icon(Icons.chevron_left, size: 18),
-            label: const Text('Previous'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primaryPurple,
-              side: BorderSide(color: Colors.purple.shade200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Page number buttons
-          ...List.generate(_totalPages, (i) {
-            if (_totalPages > 7) {
-              if (i != 0 && i != _totalPages - 1 && (i < _currentPage - 1 || i > _currentPage + 1)) {
-                if (i == _currentPage - 2 || i == _currentPage + 2) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Text('...', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                  );
-                }
-                return const SizedBox.shrink();
-              }
-            }
-            final isSelected = i == _currentPage;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: InkWell(
-                onTap: () {
-                  setState(() => _currentPage = i);
-                  _scrollController.animateTo(
-                    220,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primaryPurple : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isSelected ? AppTheme.primaryPurple : Colors.grey.shade300,
+                  }),
+                  SizedBox(width: isNarrow ? 6 : 12),
+                  OutlinedButton.icon(
+                    onPressed: _currentPage < _totalPages - 1
+                        ? () {
+                            setState(() => _currentPage++);
+                            _scrollController.animateTo(
+                              220,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.chevron_right, size: 16),
+                    label: Text(isNarrow ? 'Next' : 'Next', style: const TextStyle(fontSize: 11)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryPurple,
+                      side: BorderSide(color: Colors.purple.shade200),
+                      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 8 : 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
-                  child: Text(
-                    '${i + 1}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected ? Colors.white : AppTheme.textPrimary,
-                    ),
-                  ),
-                ),
+                ],
               ),
-            );
-          }),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: _currentPage < _totalPages - 1
-                ? () {
-                    setState(() => _currentPage++);
-                    _scrollController.animateTo(
-                      220,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                : null,
-            icon: const Icon(Icons.chevron_right, size: 18),
-            label: const Text('Next'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primaryPurple,
-              side: BorderSide(color: Colors.purple.shade200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -1411,30 +1444,30 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
                 const SizedBox(height: 10),
 
                 // Status Badge & Strand
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
                   children: [
                     _buildStatusBadge(r['status']),
                     if (r['strand'] != null && r['strand'].toString().isNotEmpty)
-                      Flexible(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _isDark ? Colors.white.withOpacity(0.08) : Colors.blueGrey.shade50,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: _isDark ? Colors.white.withOpacity(0.12) : Colors.blueGrey.shade100),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _isDark ? Colors.white.withOpacity(0.08) : Colors.blueGrey.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: _isDark ? Colors.white.withOpacity(0.12) : Colors.blueGrey.shade100),
+                        ),
+                        child: Text(
+                          r['strand'].toString(),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: _isDark ? Colors.white70 : Colors.blueGrey.shade700,
                           ),
-                          child: Text(
-                            r['strand'].toString(),
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              color: _isDark ? Colors.white70 : Colors.blueGrey.shade700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                   ],
@@ -1564,127 +1597,186 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
     final initials = _getInitials(r['studentName']);
     final primaryType = (r['primaryType'] ?? '').toString();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: _isDark ? const Color(0xFF1E1B2E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(_isDark ? 0.2 : 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showStudentDossierModal(context, r),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppTheme.primaryPurple.withOpacity(0.12),
-                  child: Text(
-                    initials,
-                    style: const TextStyle(
-                      color: AppTheme.primaryPurple,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 650;
+        final studentInfo = Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppTheme.primaryPurple.withOpacity(0.12),
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  color: AppTheme.primaryPurple,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              r['studentName'] ?? 'Unknown Student',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: _isDark ? Colors.white : const Color(0xFF1E293B),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      Flexible(
+                        child: Text(
+                          r['studentName'] ?? 'Unknown Student',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: _isDark ? Colors.white : const Color(0xFF1E293B),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'ID: ${r['studentId']}',
-                            style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                          ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Text(
-                            '${r['gradeLevel'] ?? ''} • ${r['strand'] ?? ''}',
-                            style: TextStyle(fontSize: 11.5, color: _isDark ? Colors.white70 : Colors.grey.shade700),
-                          ),
-                          if (primaryType.isNotEmpty)
-                            Text(
-                              '• Code: $primaryType${r['secondaryType'] ?? ''}${r['tertiaryType'] ?? ''}',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.riasecColor(primaryType),
-                              ),
-                            ),
-                          if (r['durationSeconds'] != null && (int.tryParse(r['durationSeconds'].toString()) ?? 0) > 0)
-                            Text(
-                              '• Time: ${_formatDuration(r['durationSeconds'])}',
-                              style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569)),
-                            ),
-                          if (r['submittedAt'] != null && r['submittedAt'].toString().isNotEmpty)
-                            Text(
-                              '• Submitted: ${r['submittedAt'].toString().split(' ')[0]}',
-                              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
-                            ),
-                        ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'ID: ${r['studentId']}',
+                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 10),
-                _buildStatusBadge(r['status']),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: () => _showStudentDossierModal(context, r),
-                  icon: const Icon(Icons.assignment_outlined, size: 14),
-                  label: const Text('View Result', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _isDark ? AppTheme.lilac : AppTheme.primaryPurple,
-                    side: BorderSide(color: _isDark ? AppTheme.lilac.withOpacity(0.4) : AppTheme.primaryPurple.withOpacity(0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-                if (r['status'] == 'approved') ...[
-                  const SizedBox(width: 6),
-                  IconButton(
-                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: AppTheme.primaryPurple),
-                    tooltip: 'Download Student PDF Report',
-                    onPressed: () => _downloadIndividualPdf(r['assessmentId']),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        '${r['gradeLevel'] ?? ''} • ${r['strand'] ?? ''}',
+                        style: TextStyle(fontSize: 11.5, color: _isDark ? Colors.white70 : Colors.grey.shade700),
+                      ),
+                      if (primaryType.isNotEmpty)
+                        Text(
+                          '• Code: $primaryType${r['secondaryType'] ?? ''}${r['tertiaryType'] ?? ''}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.riasecColor(primaryType),
+                          ),
+                        ),
+                      if (r['durationSeconds'] != null && (int.tryParse(r['durationSeconds'].toString()) ?? 0) > 0)
+                        Text(
+                          '• Time: ${_formatDuration(r['durationSeconds'])}',
+                          style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569)),
+                        ),
+                      if (r['submittedAt'] != null && r['submittedAt'].toString().isNotEmpty)
+                        Text(
+                          '• Submitted: ${r['submittedAt'].toString().split(' ')[0]}',
+                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                        ),
+                    ],
                   ),
                 ],
-              ],
+              ),
+            ),
+          ],
+        );
+
+        final actionButtons = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStatusBadge(r['status']),
+            const SizedBox(width: 10),
+            OutlinedButton.icon(
+              onPressed: () => _showStudentDossierModal(context, r),
+              icon: const Icon(Icons.assignment_outlined, size: 14),
+              label: const Text('View Result', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _isDark ? AppTheme.lilac : AppTheme.primaryPurple,
+                side: BorderSide(color: _isDark ? AppTheme.lilac.withOpacity(0.4) : AppTheme.primaryPurple.withOpacity(0.4)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            if (r['status'] == 'approved') ...[
+              const SizedBox(width: 6),
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: AppTheme.primaryPurple),
+                tooltip: 'Download Student PDF Report',
+                onPressed: () => _downloadIndividualPdf(r['assessmentId']),
+              ),
+            ],
+          ],
+        );
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: _isDark ? const Color(0xFF1E1B2E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(_isDark ? 0.2 : 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showStudentDossierModal(context, r),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: isNarrow
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          studentInfo,
+                          const SizedBox(height: 10),
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildStatusBadge(r['status']),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: () => _showStudentDossierModal(context, r),
+                                    icon: const Icon(Icons.assignment_outlined, size: 14),
+                                    label: const Text('View Result', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: _isDark ? AppTheme.lilac : AppTheme.primaryPurple,
+                                      side: BorderSide(color: _isDark ? AppTheme.lilac.withOpacity(0.4) : AppTheme.primaryPurple.withOpacity(0.4)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                                  if (r['status'] == 'approved') ...[
+                                    const SizedBox(width: 6),
+                                    IconButton(
+                                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: AppTheme.primaryPurple),
+                                      tooltip: 'Download Student PDF Report',
+                                      onPressed: () => _downloadIndividualPdf(r['assessmentId']),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(child: studentInfo),
+                          const SizedBox(width: 10),
+                          actionButtons,
+                        ],
+                      ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -2895,11 +2987,51 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
     final lowPct = total > 0 ? ((lowRseCount / total) * 100).toStringAsFixed(1) : "0.0";
     final normalPct = total > 0 ? ((normalRseCount / total) * 100).toStringAsFixed(1) : "0.0";
 
+    Widget buildPill({
+      required Color color,
+      required Color textColor,
+      required String label,
+      required String countText,
+      required Color countColor,
+    }) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              countText,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: countColor),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Card(
       elevation: 0,
+      color: _isDark ? const Color(0xFF1E1B2E) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: _isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -2921,18 +3053,20 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
                   ),
                 ),
                 const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Rosenberg Self-Esteem (RSE) Diagnostics',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    Text(
-                      'Psychological health indicator across cohort',
-                      style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Rosenberg Self-Esteem (RSE) Diagnostics',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Text(
+                        'Psychological health indicator across cohort',
+                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -2960,56 +3094,42 @@ class _StudentRecordsScreenState extends State<StudentRecordsScreen> with Widget
             ),
             const SizedBox(height: 12),
             // Breakdown pills
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.success.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.success.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(width: 9, height: 9, decoration: const BoxDecoration(color: AppTheme.success, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            const Text('Normal / High Self-Esteem', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        Text('$normalRseCount ($normalPct%)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.success)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            const Text('Low Self-Esteem', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
-                          ],
-                        ),
-                        Text('$lowRseCount ($lowPct%)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 560;
+                final normalPill = buildPill(
+                  color: AppTheme.success,
+                  textColor: _isDark ? Colors.white : AppTheme.textPrimary,
+                  label: 'Normal / High Self-Esteem',
+                  countText: '$normalRseCount ($normalPct%)',
+                  countColor: AppTheme.success,
+                );
+                final lowPill = buildPill(
+                  color: const Color(0xFFEF4444),
+                  textColor: const Color(0xFFDC2626),
+                  label: 'Low Self-Esteem',
+                  countText: '$lowRseCount ($lowPct%)',
+                  countColor: const Color(0xFFDC2626),
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    children: [
+                      normalPill,
+                      const SizedBox(height: 8),
+                      lowPill,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: normalPill),
+                    const SizedBox(width: 12),
+                    Expanded(child: lowPill),
+                  ],
+                );
+              },
             ),
           ],
         ),

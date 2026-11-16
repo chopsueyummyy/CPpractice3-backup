@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart' show ValueKey;
 import 'package:go_router/go_router.dart';
 
 import '../models/riasec_models.dart';
@@ -193,7 +194,11 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/guidance-counselor/student-records',
-      builder: (context, state) => const StudentRecordsScreen(),
+      builder: (context, state) => StudentRecordsScreen(
+        key: ValueKey(state.uri.toString()),
+        initialStrand: state.uri.queryParameters['strand'],
+        initialDominantType: state.uri.queryParameters['dominantType'],
+      ),
     ),
     GoRoute(
       path: '/guidance-counselor/ai-feedback',
@@ -217,7 +222,11 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/psychometrician/student-records',
-      builder: (context, state) => const StudentRecordsScreen(),
+      builder: (context, state) => StudentRecordsScreen(
+        key: ValueKey(state.uri.toString()),
+        initialStrand: state.uri.queryParameters['strand'],
+        initialDominantType: state.uri.queryParameters['dominantType'],
+      ),
     ),
     GoRoute(
       path: '/psychometrician/ai-feedback',
